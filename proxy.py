@@ -1,6 +1,6 @@
 #-*- coding=utf-8
 from twisted.internet import reactor,protocol
-from twisted.web import proxy,http
+from twisted.web import proxy,http,client
 import logging 
 from twisted.web.client import Agent
 
@@ -36,7 +36,9 @@ class MyProxyResponse(http.HTTPClient):
         self.response = response
         
     def connectionLost(self, reason):
-        self.request.finish()
+        if isinstance(reason.value, client.ResponseDone):
+            self.request.finish()
+        else: print reason
     def dataReceived(self, data):
         #logger.debug(data)
         self.request.responseHeaders = self.response.headers
