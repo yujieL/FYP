@@ -50,5 +50,6 @@ def handle(response,request):
     
 if __name__ == '__main__':
     reactor.listenTCP(ServerPort,MyProxyFactory())
-    logger.debug('server is listening at %d'%ServerPort)
+    #logger.debug('server is listening at %d'%ServerPort)
+    print 'server is listening at %d'%ServerPort
     reactor.run()
