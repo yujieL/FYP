@@ -6,22 +6,23 @@ from twisted.web.client import Agent
 
 #日志初始化
 ServerPort = 9000
-#logger = logging.get#logger('my#logger') 
-#logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('mylogger') 
+logger.setLevel(logging.DEBUG)
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
-#logger.addHandler(console)
-#logger.addHandler(logging.FileHandler(filename='log.txt'))
+logger.addHandler(console)
+logger.addHandler(logging.FileHandler(filename='log.txt'))
 agent = Agent(reactor)
 
 #处理用户的请求
 class MyProxyRequest(proxy.ProxyRequest):
     def process(self):
-        #logger.debug(self.getAllHeaders())
-        #logger.debug('uri: %s method: %s'%(self.uri,self.method))
-        #logger.debug('request headers: %s'%self.requestHeaders)
+        logger.debug(self.getAllHeaders())
+        logger.debug('uri: %s method: %s'%(self.uri,self.method))
+        logger.debug('request headers: %s'%self.requestHeaders)
         self.defer = agent.request(self.method, self.uri, headers=self.requestHeaders)
         self.defer.addCallback(handle,request=self)
+        self.defer.addErrback(handleErr,request=self)
         
 class MyProxy(proxy.Proxy):
     requestFactory = MyProxyRequest
@@ -40,18 +41,25 @@ class MyProxyResponse(http.HTTPClient):
             self.request.finish()
         else: print reason
     def dataReceived(self, data):
-        #logger.debug(data)
-        self.request.responseHeaders = self.response.headers
         self.request.write(data)
             
         
 #处理从网页下载下来的回应
 def handle(response,request):
-    #logger.debug('response.headers: %s'%response.headers)
-    response.deliverBody(MyProxyResponse(request,response))
+    logger.debug('response.code%d'%response.code)
+    request.setResponseCode(response.code)
+    request.responseHeaders = response.headers
+    if response.code in (304, 404):
+        request.finish()
+    else: 
+        response.deliverBody(MyProxyResponse(request,response))
+
+#处理请求失败的情况        
+def handleErr(reason,request):
+    print 'Error'
+    request.finish()
     
 if __name__ == '__main__':
     reactor.listenTCP(ServerPort,MyProxyFactory())
-    #logger.debug('server is listening at %d'%ServerPort)
-    print 'server is listening at %d'%ServerPort
+    logger.debug('server is listening at %d'%ServerPort)
     reactor.run()
