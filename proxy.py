@@ -23,7 +23,7 @@ class MyProxyRequest(proxy.ProxyRequest):
         self.defer = agent.request(self.method, self.uri, headers=self.requestHeaders)
         self.defer.addCallback(handle,request=self)
         self.defer.addErrback(handleErr,request=self)
-        
+    
 class MyProxy(proxy.Proxy):
     requestFactory = MyProxyRequest
     
@@ -43,22 +43,24 @@ class MyProxyResponse(http.HTTPClient):
     def dataReceived(self, data):
         self.request.write(data)
             
-        
+
 #处理从网页下载下来的回应
 def handle(response,request):
     logger.debug('response.code%d'%response.code)
     request.setResponseCode(response.code)
     request.responseHeaders = response.headers
     if response.code in (304, 404):
-        request.finish()
+            request.notifiyFinish().addCallback(closeRequest,request)
     else: 
         response.deliverBody(MyProxyResponse(request,response))
 
 #处理请求失败的情况        
 def handleErr(reason,request):
     print 'Error'
-    request.finish()
-    
+    request.notifiyFinish().addCallback(closeRequest,request)
+
+def closeRequest(r):
+    r.finish()
 if __name__ == '__main__':
     reactor.listenTCP(ServerPort,MyProxyFactory())
     logger.debug('server is listening at %d'%ServerPort)
