@@ -28,7 +28,6 @@ class MyProxyRequest(proxy.ProxyRequest):
         if self is not None:
             logger.debug('Remote Host have no response \n %s\n'%reason)
             self.finish()
-            #self = None
    
 class MyProxy(proxy.Proxy):
     requestFactory = MyProxyRequest
