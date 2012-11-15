@@ -1,4 +1,3 @@
-
 from twisted.internet import protocol,reactor,endpoints
 import re,struct,socks5,socket
 
@@ -100,8 +99,8 @@ def handleErr(reason,protocol):
     protocol.transport.loseConnection()  
 
 if __name__ == '__main__':    
-    e = endpoints.TCP4ServerEndpoint(reactor, 9000)
+    e = endpoints.TCP4ServerEndpoint(reactor, 1080)
     f = ProxyFactory(ProxyServerProtocol)
     e.listen(f)
-    print 'Server is running at 9000'
+    print 'Server is running at 1080'
     reactor.run()
