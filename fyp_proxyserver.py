@@ -4,7 +4,7 @@
 # Created: 2012/11/18
 
 
-from twisted.internet import protocol,reactor,endpoints,ssl
+from twisted.internet import protocol,reactor,endpoints
 import re,struct,socks5,socket
 
 class ProxyFactory(protocol.Factory):
