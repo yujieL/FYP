@@ -6,6 +6,7 @@
 
 from twisted.internet import protocol,reactor,endpoints
 import re,struct,socks5,socket
+PROXYTYPE = 'SOCK5'
 
 class ProxyFactory(protocol.Factory):
     
@@ -13,7 +14,7 @@ class ProxyFactory(protocol.Factory):
     def __init__(self,PROTOCOL,oppsite=None,**kwarg):
         '''
         @PROTOCOL A Class type of twisted.internet.protocol.Protocol,indicated self protocol
-        @oppsite indicated remote protocol
+        @oppsite indicates remote protocol
         '''
         self.ProtocolClass = PROTOCOL
         self.oppsite = oppsite
@@ -28,14 +29,14 @@ class ProxyFactory(protocol.Factory):
     
 class ProxyServerProtocol(protocol.Protocol):
     TYPES = ('HTTP','SOCK5')
-    proxyType = ''
+    proxyType = PROXYTYPE
     times = 0
     sock5Header = None
     
     def dataReceived(self, data):        
         self.times += 1
-        if self.times is 1:
-            self.proxyType = self.TYPES[0] if len(data) >30 else self.TYPES[1]
+        #if self.times is 1:
+        #    self.proxyType = self.TYPES[0] if len(data) >30 else self.TYPES[1]
             
         if self.proxyType == 'HTTP':
             self.__handleHttpRequest(data)
@@ -63,11 +64,14 @@ class ProxyServerProtocol(protocol.Protocol):
         if self.times == 1:
             self.transport.write(self.sock5Header.NO_AUTHENTICATION_REQUIRED())
             
-        elif self.times == 2:
+        elif self.times == 2:    
+            #print repr(data)
             header_length = len(data)
             host = data[5:header_length-2]
             port =struct.unpack('>H',data[header_length-2:header_length])[0] 
             client = endpoints.TCP4ClientEndpoint(reactor, host, port)
+        # Could have an better improvment: One factory is enough.
+        # Delaying the responsibilty to the protocol instead of the factory
             client.connect(ProxyFactory(ProxySock5ClientProtocol, 
                                 oppsite=self,data=self.sock5Header)).addErrback(handleSock5Err,self)
         elif self.times >= 3:
@@ -105,7 +109,7 @@ def handleHttpErr(reason,protocol):
     
 def handleSock5Err(reason,protocol):
     print 'Server refuse Sock5'
-    #protocol.transport.write()
+    print repr(reason)
     protocol.transport.loseConnection()
     
 if __name__ == '__main__':    
